@@ -5,12 +5,25 @@ from typing import Any, AsyncIterator, Literal
 
 import cv2
 from framegrab import FrameGrabber
+from framegrab.config import (
+    BaslerFrameGrabberConfig,
+    FileStreamFrameGrabberConfig,
+    GenericUSBFrameGrabberConfig,
+    HttpLiveStreamingFrameGrabberConfig,
+    RealSenseFrameGrabberConfig,
+    RTSPFrameGrabberConfig,
+    YouTubeLiveFrameGrabberConfig,
+)
 from mcp.server.fastmcp import FastMCP, Image
 
 logger = logging.getLogger(__name__)
 
 ENABLE_FRAMEGRAB_AUTO_DISCOVERY = (
     os.getenv("ENABLE_FRAMEGRAB_AUTO_DISCOVERY", "false").lower() == "true"
+)
+FRAMEGRAB_RTSP_AUTO_DISCOVERY_MODE = os.getenv(
+    "FRAMEGRAB_RTSP_AUTO_DISCOVERY_MODE",
+    "off",  # "off", "ip_only", "light", "complete_fast", "complete_slow"
 )
 
 # Cache to store created FrameGrabbers, maps name to FrameGrabber
@@ -22,7 +35,9 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[Any]:
     if ENABLE_FRAMEGRAB_AUTO_DISCOVERY:
         logger.info("Autodiscovering generic_usb and basler framegrabbers...")
         try:
-            grabbers: dict[str, FrameGrabber] = FrameGrabber.autodiscover()
+            grabbers: dict[str, FrameGrabber] = FrameGrabber.autodiscover(
+                rtsp_discover_mode=FRAMEGRAB_RTSP_AUTO_DISCOVERY_MODE
+            )
             logger.info(f"Autodiscovered {len(grabbers)} framegrabbers.")
             _grabber_cache.update(grabbers)
         except Exception:
@@ -42,7 +57,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[Any]:
 
 
 mcp = FastMCP(
-    "framegrab-mcp",
+    "framegrab",
     dependencies=[
         "framegrab>=0.11.0",
         "opencv-python",
@@ -54,11 +69,29 @@ mcp = FastMCP(
 
 
 @mcp.tool(
-    name="list_framegrabbers",
-    description="List all available framegrabbers by name, sorted alphanumerically.",
+    name="create_framegrabber",
+    description="""Create a new framegrabber from a configuration object.
+Framegrabbers can be used to capture images from a webcam, a USB camera, an RTSP stream, a youtube live stream, or any other video source supported by the framegrab library.
+Returns the name of the created framegrabber.""",
 )
-def list_framegrabbers() -> list[str]:
-    return sorted(list(_grabber_cache.keys()))
+def create_framegrabber(
+    config: YouTubeLiveFrameGrabberConfig
+    | RTSPFrameGrabberConfig
+    | GenericUSBFrameGrabberConfig
+    | FileStreamFrameGrabberConfig
+    | HttpLiveStreamingFrameGrabberConfig
+    | RealSenseFrameGrabberConfig
+    | BaslerFrameGrabberConfig,
+) -> str:
+    try:
+        # Create the new grabber
+        grabber = FrameGrabber.create_grabber(config)
+        _grabber_cache[config.name] = grabber
+        logger.info(f"Created new framegrabber: {config.name}")
+        return config.name
+    except Exception as e:
+        logger.error(f"Error creating framegrabber: {e}")
+        raise ValueError(f"Failed to create framegrabber: {str(e)}")
 
 
 @mcp.tool(
@@ -101,10 +134,18 @@ def grab_frame(
 
 
 @mcp.tool(
-    name="get_config",
+    name="list_framegrabbers",
+    description="List all available framegrabbers by name, sorted alphanumerically.",
+)
+def list_framegrabbers() -> list[str]:
+    return sorted(list(_grabber_cache.keys()))
+
+
+@mcp.tool(
+    name="get_framegrabber_config",
     description="Retrieve the configuration of a specific framegrabber.",
 )
-def get_config(framegrabber_name: str) -> dict:
+def get_framegrabber_config(framegrabber_name: str) -> dict:
     grabber: FrameGrabber = _grabber_cache.get(framegrabber_name)
     if not grabber:
         raise ValueError(
@@ -117,7 +158,7 @@ def get_config(framegrabber_name: str) -> dict:
     name="set_config",
     description="Update the configuration options for a specific framegrabber.",
 )
-def set_config(framegrabber_name: str, options: dict) -> dict:
+def set_framegrabber_config(framegrabber_name: str, options: dict) -> dict:
     grabber: FrameGrabber = _grabber_cache.get(framegrabber_name)
     if not grabber:
         raise ValueError(
@@ -135,52 +176,10 @@ def set_config(framegrabber_name: str, options: dict) -> dict:
 
 
 @mcp.tool(
-    name="create_grabber",
-    description="""Create a new framegrabber from a configuration dictionary.
-    The config should contain at minimum the 'input_type' field, and any other required parameters
-    for the specific input type. For example, an RTSP camera needs an 'id' with 'rtsp_url'.
-    Examples:
-    {
-        "name": "My RTSP Camera",
-        "input_type": "rtsp",
-        "id": {
-            "rtsp_url": "rtsp://admin:password@192.168.1.100:554/stream"
-        }
-    }
-
-    {
-        "name": "My Webcam",
-        "input_type": "generic_usb",
-    }
-
-    Returns the name of the created framegrabber.""",
-)
-def create_grabber(config: dict) -> str:
-    try:
-        # Ensure the config has a name to avoid conflicts
-        if "name" not in config:
-            raise ValueError("The configuration must include a 'name' field.")
-
-        # Check if a grabber with this name already exists
-        name = config["name"]
-        if name in _grabber_cache:
-            raise ValueError(f"A framegrabber with name '{name}' already exists.")
-
-        # Create the new grabber
-        grabber = FrameGrabber.create_grabber(config)
-        _grabber_cache[name] = grabber
-        logger.info(f"Created new framegrabber: {name}")
-        return name
-    except Exception as e:
-        logger.error(f"Error creating framegrabber: {e}")
-        raise ValueError(f"Failed to create framegrabber: {str(e)}")
-
-
-@mcp.tool(
     name="release_grabber",
     description="Release a framegrabber and remove it from the available grabbers.",
 )
-def release_grabber(framegrabber_name: str) -> bool:
+def release_framegrabber(framegrabber_name: str) -> bool:
     """
     Release a framegrabber's resources and remove it from the available grabbers.
 

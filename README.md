@@ -9,13 +9,17 @@ This MCP server is still in early development. The functionality and available t
 ### Tools
 The following tools are available in the Framegrab MCP server:
 
+- **create_framegrabber**: Create a new framegrabber from a configuration object and add it to the available grabbers.
+- **grab_frame**: Grab a frame from the specified framegrabber and return it as an image in the desired format (png, jpg, or webp).
 - **list_framegrabbers**: List all available framegrabbers by name, sorted alphanumerically.
-- **grab_frame**: Grab a frame from the specified framegrabber and return it as an image.
-- **get_config**: Retrieve the configuration of a specific framegrabber.
-- **set_config**: Update the configuration options for a specific framegrabber.
-- **create_grabber**: Create a new framegrabber from configuration and add it to the available grabbers.
-- **release_grabber**: Release a framegrabber and remove it from the available grabbers.
+- **get_framegrabber_config**: Retrieve the configuration of a specific framegrabber.
+- **set_framegrabber_config**: Update the configuration options for a specific framegrabber.
+- **release_framegrabber**: Release a framegrabber and remove it from the available grabbers.
 
+### Resources
+The following resources are available in the Framegrab MCP server:
+
+- **framegrabbers**: Lists all available framegrabbers by name, sorted alphanumerically.
 
 ## Configuration
 
@@ -53,7 +57,9 @@ Add the following to your zed `settings.json`:
 
 ### (experimental) Enabling autodiscovery of framegrabbers
 Enable autodiscovery of framegrabbers (such as your webcam or usb cameras) by setting
-`ENABLE_FRAMEGRAB_AUTO_DISCOVERY="true"` in your environment variables. This will automatically add any discovered framegrabbers to the list of available framegrabbers:
+`ENABLE_FRAMEGRAB_AUTO_DISCOVERY="true"` in your environment variables. This will automatically add any discovered framegrabbers to the list of available framegrabbers.
+
+If autodiscovery is enabled, then you can also configure how RTSP autodiscovery works by changing `FRAMEGRAB_RTSP_AUTO_DISCOVERY_MODE`. By default, it is set to `"off"`, which disables RTSP autodiscovery. For a thorough attempt at autodiscovery, set it to `"complete_fast"`.
 
 ```json
 {
@@ -64,7 +70,8 @@ Enable autodiscovery of framegrabbers (such as your webcam or usb cameras) by se
         "framegrab-mcp-server"
       ],
       "env": {
-        "ENABLE_FRAMEGRAB_AUTO_DISCOVERY": "true"
+        "ENABLE_FRAMEGRAB_AUTO_DISCOVERY": "true",
+        "FRAMEGRAB_RTSP_AUTO_DISCOVERY_MODE": "complete_fast"
       }
     }
   }

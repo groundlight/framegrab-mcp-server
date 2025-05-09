@@ -15,8 +15,8 @@ jobs:
 
       - name: Build package with uv
         run: |
-          uv build  --no-sources
+          make build
 
       - name: Publish package to pypi
         run: |
-          uv publish
+          make publish
