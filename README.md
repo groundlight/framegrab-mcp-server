@@ -2,7 +2,10 @@
 
 ## Overview
 A Model Context Protocol (MCP) server for capturing images from cameras and video streams. Uses the [framegrab](https://github.com/groundlight/framegrab) library to handle the actual image capture.
+
 This server can be used to capture images from a webcam, a USB camera, an RTSP stream, a youtube live stream, or any other video source supported by the framegrab library.
+
+![Framegrab MCP Server in action](assets/framegrab-mcp-in-action.png)
 
 This MCP server is still in early development. The functionality and available tools are subject to change and expansion as we continue to develop and improve the server.
 
@@ -29,7 +32,7 @@ Add this to your claude_desktop_config.json:
 {
   "mcpServers": {
     "framegrab": {
-      "command": "/Users/your_user/.cargo/bin/uvx",
+      "command": "uvx",
       "args": [
         "framegrab-mcp-server"
       ]
@@ -45,7 +48,7 @@ Add the following to your zed `settings.json`:
   "context_servers": {
     "framegrab": {
       "command": {
-        "path": "/Users/your_user/.cargo/bin/uvx",
+        "path": "uvx",
         "args": [
           "framegrab-mcp-server"
         ]
@@ -65,7 +68,7 @@ If autodiscovery is enabled, then you can also configure how RTSP autodiscovery 
 {
   "mcpServers": {
     "framegrab": {
-      "command": "/Users/your_user/.cargo/bin/uvx",
+      "command": "uvx",
       "args": [
         "framegrab-mcp-server"
       ],
