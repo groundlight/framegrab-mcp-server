@@ -1,17 +1,12 @@
 [project]
 name = "framegrab-mcp-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "Allow LLMs to capture images from cameras and video streams."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Groundlight AI" }]
 license = { text = "Apache-2.0" }
-dependencies = [
-    "mcp[cli]",
-    "framegrab>=0.11.1",
-    "pypylon",
-    "streamlink",
-]
+dependencies = ["mcp[cli]", "framegrab>=0.11.1", "pypylon", "streamlink"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
