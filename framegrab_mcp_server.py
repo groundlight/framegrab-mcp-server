@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Literal
 
@@ -8,19 +9,24 @@ from mcp.server.fastmcp import FastMCP, Image
 
 logger = logging.getLogger(__name__)
 
+ENABLE_FRAMEGRAB_AUTO_DISCOVERY = (
+    os.getenv("ENABLE_FRAMEGRAB_AUTO_DISCOVERY", "false").lower() == "true"
+)
+
 # Cache to store created FrameGrabbers, maps name to FrameGrabber
 _grabber_cache = {}
 
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[Any]:
-    logger.info("Autodiscovering generic_usb and basler framegrabbers...")
-    try:
-        grabbers: dict[str, FrameGrabber] = FrameGrabber.autodiscover()
-        logger.info(f"Autodiscovered {len(grabbers)} framegrabbers.")
-        _grabber_cache.update(grabbers)
-    except Exception:
-        logger.error("Error autodiscovering framegrabbers.", exc_info=True)
+    if ENABLE_FRAMEGRAB_AUTO_DISCOVERY:
+        logger.info("Autodiscovering generic_usb and basler framegrabbers...")
+        try:
+            grabbers: dict[str, FrameGrabber] = FrameGrabber.autodiscover()
+            logger.info(f"Autodiscovered {len(grabbers)} framegrabbers.")
+            _grabber_cache.update(grabbers)
+        except Exception:
+            logger.error("Error autodiscovering framegrabbers.", exc_info=True)
 
     logger.info("Framegrab MCP server has started, listening for requests...")
 
@@ -38,7 +44,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[Any]:
 mcp = FastMCP(
     "framegrab-mcp",
     dependencies=[
-        "framegrab>=0.11.1",
+        "framegrab>=0.11.0",
         "opencv-python",
         "numpy",
         "pypylon",

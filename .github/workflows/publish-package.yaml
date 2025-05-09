@@ -1,0 +1,22 @@
+# When a release is created on github, publish the package to public pypi
+# Note that publishing to pypi is authorized via PyPi's trusted publisher flow.
+name: publish package
+on:
+  release:
+    types: [created]
+jobs:
+  publish-python-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Build package with uv
+        run: |
+          uv build  --no-sources
+
+      - name: Publish package to pypi
+        run: |
+          uv publish

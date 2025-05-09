@@ -2,6 +2,7 @@
 
 ## Overview
 A Model Context Protocol (MCP) server for capturing images from cameras and video streams. Uses the [framegrab](https://github.com/groundlight/framegrab) library to handle the actual image capture.
+This server can be used to capture images from a webcam, a USB camera, an RTSP stream, a youtube live stream, or any other video source supported by the framegrab library.
 
 This MCP server is still in early development. The functionality and available tools are subject to change and expansion as we continue to develop and improve the server.
 
@@ -18,33 +19,15 @@ The following tools are available in the Framegrab MCP server:
 
 ## Configuration
 
-Currently the server is set up by cloning this repository to your local machine.
-```bash
-git clone https://github.com/groundlight/framegrab-mcp-server.git
-```
-
-Proceed to configure the server for your LLM client.
-
 ### Usage with Claude Desktop
 Add this to your claude_desktop_config.json:
 ```json
 {
   "mcpServers": {
     "framegrab": {
-      "command": "/Users/your_user/.cargo/bin/uv",
+      "command": "/Users/your_user/.cargo/bin/uvx",
       "args": [
-        "run",
-        "--with",
-        "mcp[cli]",
-        "--with",
-        "framegrab>=0.11.1",
-        "--with",
-        "opencv-python",
-        "--with",
-        "pypylon",
-        "mcp",
-        "run",
-        "/path/to/framegrab-mcp-server/framegrab_mcp_server.py"
+        "framegrab-mcp-server"
       ]
     }
   }
@@ -58,23 +41,34 @@ Add the following to your zed `settings.json`:
   "context_servers": {
     "framegrab": {
       "command": {
-        "path": "/Users/your_user/.cargo/bin/uv",
+        "path": "/Users/your_user/.cargo/bin/uvx",
         "args": [
-          "run",
-          "--with",
-          "mcp[cli]",
-          "--with",
-          "framegrab>=0.11.1",
-          "--with",
-          "opencv-python",
-          "--with",
-          "pypylon",
-          "mcp",
-          "run",
-          "/path/to/framegrab-mcp-server/framegrab_mcp_server.py"
+          "framegrab-mcp-server"
         ]
       }
     }
   }
 }
 ```
+
+### (experimental) Enabling autodiscovery of framegrabbers
+Enable autodiscovery of framegrabbers (such as your webcam or usb cameras) by setting
+`ENABLE_FRAMEGRAB_AUTO_DISCOVERY="true"` in your environment variables. This will automatically add any discovered framegrabbers to the list of available framegrabbers:
+
+```json
+{
+  "mcpServers": {
+    "framegrab": {
+      "command": "/Users/your_user/.cargo/bin/uvx",
+      "args": [
+        "framegrab-mcp-server"
+      ],
+      "env": {
+        "ENABLE_FRAMEGRAB_AUTO_DISCOVERY": "true"
+      }
+    }
+  }
+}
+```
+
+This will increase server startup time.
